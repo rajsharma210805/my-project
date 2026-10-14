@@ -1,116 +1,134 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-const API_URL = "http://localhost:8080/api/students";
+const API = 'http://localhost:8080/api/students';
 
-export default function App() {
-  const [students, setStudents] = useState([]);
-  const [form, setForm] = useState({ name: "", email: "", course: "" });
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+function App() {
+    const [students, setStudents] = useState([]);
+    const [name, setName] = useState('');
+    const [course, setCourse] = useState('');
+    const [message, setMessage] = useState('');
 
-  async function loadStudents() {
-    try {
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error("Could not load students");
-      setStudents(await response.json());
-      setMessage("");
-    } catch {
-      setMessage("Backend connect nahi ho raha. Pehle Java Spring Boot backend start karo.");
+    async function loadStudents() {
+        try {
+            const response = await fetch(API);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch students');
+            }
+
+            const data = await response.json();
+            setStudents(data);
+            setMessage('');
+        } catch (error) {
+            setMessage('Backend connect nahi ho raha hai.');
+        }
     }
-  }
 
-  useEffect(() => {
-    loadStudents();
-  }, []);
+    useEffect(() => {
+        loadStudents();
+    }, []);
 
-  function updateField(event) {
-    setForm({ ...form, [event.target.name]: event.target.value });
-  }
+    async function addStudent(event) {
+        event.preventDefault();
 
-  async function addStudent(event) {
-    event.preventDefault();
-    setLoading(true);
-    setMessage("");
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error("Could not add student");
-      setForm({ name: "", email: "", course: "" });
-      setMessage("Student successfully add ho gaya!");
-      await loadStudents();
-    } catch {
-      setMessage("Student add nahi hua. Backend aur MySQL connection check karo.");
-    } finally {
-      setLoading(false);
+        try {
+            const response = await fetch(API, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    course: course
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to add student');
+            }
+
+            setName('');
+            setCourse('');
+            setMessage('Student successfully added!');
+
+            await loadStudents();
+        } catch (error) {
+            setMessage('Student add nahi hua.');
+        }
     }
-  }
 
-  async function deleteStudent(id) {
-    try {
-      const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("Delete failed");
-      setStudents((current) => current.filter((student) => student.id !== id));
-      setMessage("Student delete ho gaya.");
-    } catch {
-      setMessage("Delete nahi hua. Backend check karo.");
+    async function deleteStudent(id) {
+        try {
+            const response = await fetch(`${API}/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete student');
+            }
+
+            setMessage('Student deleted successfully!');
+
+            await loadStudents();
+        } catch (error) {
+            setMessage('Student delete nahi hua.');
+        }
     }
-  }
 
-  return (
-    <main className="page">
-      <header className="hero">
-        <span className="badge">BEGINNER PROJECT</span>
-        <h1>Student Management</h1>
-        <p>React + Java Spring Boot + MySQL</p>
-      </header>
+    return (
+        <div className="container">
+            <h1>Student Manager</h1>
 
-      <section className="card">
-        <h2>Add a student</h2>
-        <form onSubmit={addStudent}>
-          <label>
-            Full name
-            <input name="name" value={form.name} onChange={updateField} placeholder="e.g. Raj Sharma" required />
-          </label>
-          <label>
-            Email
-            <input name="email" type="email" value={form.email} onChange={updateField} placeholder="raj@example.com" required />
-          </label>
-          <label>
-            Course
-            <input name="course" value={form.course} onChange={updateField} placeholder="e.g. CSE" required />
-          </label>
-          <button type="submit" disabled={loading}>{loading ? "Saving..." : "Add Student"}</button>
-        </form>
-        {message && <p className="message" role="status">{message}</p>}
-      </section>
+            <p>Add and manage your students.</p>
 
-      <section className="card">
-        <div className="list-heading">
-          <h2>Students</h2>
-          <button className="secondary" onClick={loadStudents} type="button">Refresh</button>
+            <form onSubmit={addStudent}>
+                <input
+                    type="text"
+                    placeholder="Student Name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    required
+                />
+
+                <input
+                    type="text"
+                    placeholder="Course"
+                    value={course}
+                    onChange={(event) => setCourse(event.target.value)}
+                    required
+                />
+
+                <button type="submit">
+                    Add Student
+                </button>
+            </form>
+
+            {message && <p>{message}</p>}
+
+            <h2>Student List</h2>
+
+            {students.length === 0 ? (
+                <p>No students found.</p>
+            ) : (
+                <ul>
+                    {students.map((student) => (
+                        <li key={student.id}>
+                            <span>
+                                {student.name} - {student.course}
+                            </span>
+
+                            <button
+                                className="delete"
+                                onClick={() => deleteStudent(student.id)}
+                            >
+                                Delete
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
-        {students.length === 0 ? (
-          <p className="empty">No students yet. Add your first student above.</p>
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Course</th><th>Action</th></tr></thead>
-              <tbody>
-                {students.map((student) => (
-                  <tr key={student.id}>
-                    <td>{student.id}</td><td>{student.name}</td><td>{student.email}</td><td>{student.course}</td>
-                    <td><button className="delete" onClick={() => deleteStudent(student.id)} type="button">Delete</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-      <footer>Simple college practice project</footer>
-    </main>
-  );
+    );
 }
+
+export default App;
