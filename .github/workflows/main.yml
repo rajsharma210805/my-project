@@ -20,7 +20,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Frontend Image
-        run: docker build -t rajsharma2110/student-frontend:latest ./frontend
+        run: docker build -t rajsharma2110/student-frontend:latest ./student-management-system/frontend
 
       - name: Push Frontend Image
         run: docker push rajsharma2110/student-frontend:latest
