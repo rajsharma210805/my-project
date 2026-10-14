@@ -5,7 +5,7 @@ on:
     branches: 
       - main 
 jobs:
-   docker-publish:
+  docker-publish:
   runs-on: ubuntu-latest
 
 steps:
